@@ -1,0 +1,294 @@
+
+
+--- START OF FILE: master/.python-version ---
+```
+3.11
+
+```
+
+
+--- END OF FILE: master/.python-version ---
+
+--- START OF FILE: master/README.md ---
+
+
+--- END OF FILE: master/README.md ---
+
+--- START OF FILE: master/index.html ---
+```
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>OCR API Tester</title>
+        <style>
+            body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; background: #f9f9f9; }
+            .container { background: white; border: 2px dashed #ccc; padding: 2rem; text-align: center; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+            .container.dragover { border-color: #000; background: #f0f0f0; }
+            
+            #preview { max-width: 100%; max-height: 400px; margin-top: 1rem; border-radius: 8px; display: none; box-shadow: 0 2px 4px rgb(0 0 0 / 0.1); }
+            #result { white-space: pre-wrap; background: #1a1a1a; color: #fff; padding: 1.5rem; margin-top: 2rem; border-radius: 8px; display: none; text-align: left; font-family: monospace; overflow-x: auto; }
+            
+            .controls { margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: center; align-items: center; }
+            
+            /* Hidden file input */
+            input[type="file"] { display: none; }
+            
+            /* Custom Button Styles */
+            .btn { padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.2s; border: none; font-size: 1rem; }
+            .btn-primary { background: #000; color: #fff; }
+            .btn-primary:hover { background: #333; }
+            
+            .btn-secondary { background: #e5e7eb; color: #374151; }
+            .btn-secondary:hover { background: #d1d5db; }
+            
+            .btn-danger { background: #ef4444; color: white; display: none; }
+            .btn-danger:hover { background: #dc2626; }
+            
+            .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+            
+            .upload-label { display: inline-block; cursor: pointer; }
+        </style>
+    </head>
+    <body>
+        <h1 style="text-align: center; margin-bottom: 2rem;">Image-to-Text OCR API</h1>
+        
+        <div class="container" id="dropZone">
+            <div id="uploadPrompt">
+                <label for="fileInput" class="btn btn-primary upload-label">
+                    📁 Choose Image
+                </label>
+                <p style="color: #666; margin-top: 1rem;">or drag and drop here</p>
+            </div>
+
+            <input type="file" id="fileInput" accept="image/png, image/jpeg">
+            <img id="preview">
+            
+            <div class="controls">
+                <button onclick="uploadImage()" id="extractBtn" class="btn btn-primary" style="display: none;">Extract Text</button>
+                <button onclick="clearState()" id="clearBtn" class="btn btn-secondary" style="display: none;">Clear</button>
+            </div>
+        </div>
+        
+        <div id="result"></div>
+
+        <script>
+            const fileInput = document.getElementById('fileInput');
+            const preview = document.getElementById('preview');
+            const result = document.getElementById('result');
+            const extractBtn = document.getElementById('extractBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const uploadPrompt = document.getElementById('uploadPrompt');
+            const dropZone = document.getElementById('dropZone');
+
+            // Handle File Selection
+            fileInput.onchange = handleFileSelect;
+
+            function handleFileSelect(e) {
+                const file = e.target.files[0] || e.dataTransfer?.files[0];
+                if (file) {
+                    // Update Preview
+                    preview.src = URL.createObjectURL(file);
+                    preview.style.display = 'inline-block';
+                    
+                    // Show Controls, Hide Prompt
+                    uploadPrompt.style.display = 'none';
+                    extractBtn.style.display = 'inline-block';
+                    clearBtn.style.display = 'inline-block';
+                    extractBtn.disabled = false;
+                    extractBtn.innerText = 'Extract Text';
+                    
+                    // Hide previous result
+                    result.style.display = 'none';
+                }
+            }
+            
+            function clearState() {
+                fileInput.value = '';
+                preview.src = '';
+                preview.style.display = 'none';
+                result.style.display = 'none';
+                result.textContent = '';
+                
+                uploadPrompt.style.display = 'block';
+                extractBtn.style.display = 'none';
+                clearBtn.style.display = 'none';
+            }
+
+            // Drag and Drop support
+            dropZone.ondragover = (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            };
+            
+            dropZone.ondragleave = () => {
+                dropZone.classList.remove('dragover');
+            };
+            
+            dropZone.ondrop = (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                handleFileSelect(e);
+                // Manually set files to input if dropped
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                }
+            };
+
+            async function uploadImage() {
+                const file = fileInput.files[0];
+                if (!file) return;
+
+                extractBtn.disabled = true;
+                extractBtn.innerText = 'Processing...';
+                result.style.display = 'none';
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const response = await fetch('/ocr/image', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        const text = await response.text();
+                        result.style.display = 'block';
+                        result.textContent = text;
+                    } else {
+                        const data = await response.json();
+                        alert('Error: ' + (data.detail || 'Unknown error'));
+                    }
+                } catch (e) {
+                    alert('Error: ' + e.message);
+                } finally {
+                    extractBtn.disabled = false;
+                    extractBtn.innerText = 'Extract Text';
+                }
+            }
+        </script>
+    </body>
+</html>
+
+```
+
+
+--- END OF FILE: master/index.html ---
+
+--- START OF FILE: master/main.py ---
+```
+[project]
+name = "image-ocr"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi[standard]>=0.128.0",
+    "pillow>=12.1.0",
+    "pytesseract>=0.3.13",
+    "python-multipart>=0.0.21",
+]
+
+```
+
+
+--- END OF FILE: master/main.py ---
+
+--- START OF FILE: master/pyproject.toml ---
+```
+annotated-doc==0.0.4
+annotated-types==0.7.0
+anyio==4.12.1
+certifi==2026.1.4
+click==8.3.1
+colorama==0.4.6
+dnspython==2.8.0
+email-validator==2.3.0
+fastapi==0.128.0
+fastapi-cli==0.0.20
+fastapi-cloud-cli==0.8.0
+fastar==0.8.0
+h11==0.16.0
+httpcore==1.0.9
+httptools==0.7.1
+httpx==0.28.1
+idna==3.11
+jinja2==3.1.6
+markdown-it-py==4.0.0
+markupsafe==3.0.3
+mdurl==0.1.2
+packaging==25.0
+pillow==12.1.0
+pydantic==2.12.5
+pydantic-core==2.41.5
+pydantic-extra-types==2.11.0
+pydantic-settings==2.12.0
+pygments==2.19.2
+pytesseract==0.3.13
+python-dotenv==1.2.1
+python-multipart==0.0.21
+pyyaml==6.0.3
+rich==14.2.0
+rich-toolkit==0.17.1
+rignore==0.7.6
+sentry-sdk==2.49.0
+shellingham==1.5.4
+starlette==0.50.0
+typer==0.21.1
+typing-extensions==4.15.0
+typing-inspection==0.4.2
+urllib3==2.6.3
+uvicorn==0.40.0
+watchfiles==1.1.1
+websockets==15.0.1
+
+```
+
+
+--- END OF FILE: master/pyproject.toml ---
+
+--- START OF FILE: master/requirements.txt ---
+```
+from fastapi.responses import FileResponse, PlainTextResponse
+
+# ... (imports remain the same) ...
+
+app = FastAPI()
+
+@app.get("/")
+async def main():
+    return FileResponse("index.html")
+
+@app.post("/ocr/image", response_class=PlainTextResponse)
+# ... (rest of the code) ...
+
+@app.post("/ocr/image", response_class=PlainTextResponse)
+async def extract_text(file: UploadFile = File(...)):
+    # 1. Validate file type
+    if file.content_type not in ["image/jpeg", "image/png", "image/jpg"]:
+        raise HTTPException(
+            status_code=400, 
+            detail="Invalid file type. Only JPEG and PNG are supported."
+        )
+    
+    try:
+        # 2. Open image
+        contents = await file.read()
+        image = Image.open(io.BytesIO(contents))
+        
+        # 3. Preprocess (Convert to grayscale)
+        image = image.convert("L")
+        
+        # 4. Run Tesseract
+        text = pytesseract.image_to_string(image)
+        
+        return text.strip()
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+```
+
+
+--- END OF FILE: master/requirements.txt ---
