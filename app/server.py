@@ -295,7 +295,13 @@ rt = app.route
 @rt('/')
 def get():
     return Html(
-        Head(Title("Repo2Context")),
+        Head(
+            Title("Repo2Context"),
+            Link(rel="preconnect", href="https://fonts.googleapis.com"),
+            Link(rel="preconnect", href="https://fonts.gstatic.com", crossorigin=""),
+            Link(rel="stylesheet", href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap"),
+            Style(CUSTOM_CSS)
+        ),
         Body(
             Div(
                 Div(
